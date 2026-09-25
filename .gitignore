@@ -1,0 +1,45 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Raw one-off government-data pulls (PowerShell Invoke-WebRequest exports)
+# used once by a scripts/*.py to update baked JSON/CSV, then no longer
+# needed — see the script's docstring for the exact command to re-fetch.
+pa-district-aun.json
+
+# Hero source frames and grading masters.
+#
+# assets-source/sun-sequence/ is the 17-frame sun transition Kelly rendered —
+# 25 MB of JPEGs that scripts/build-hero-plates.py turns into the encoded
+# plates in public/assets/hero/. Those plates ARE the deliverable and they are
+# committed; these are the negatives.
+#
+# Kept out of git deliberately. Git keeps every version of a binary forever, so
+# each re-render would add another 25 MB to history permanently and there is no
+# way to undo that short of rewriting history. The masters live in SharePoint
+# instead — see the docstring in scripts/build-hero-plates.py for the path.
+#
+# To rebuild the plates: put the sequence back in assets-source/sun-sequence/
+# and run `python scripts/build-hero-plates.py`.
+assets-source/

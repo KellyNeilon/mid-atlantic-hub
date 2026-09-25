@@ -1,0 +1,601 @@
+/*
+  Ported from the v6 prototype's pa-district-map.html <style> block.
+
+  Card / scrim / RFP-marker / loading-state styles are intentionally left
+  out for now — they land in a later step alongside the interactions
+  (hover, click, data-driven color) that actually use them. This pass is
+  geometry + static chrome only.
+*/
+
+.district-map {
+  /* Brand values come from src/styles/tokens.css; --ease and everything
+     below it are this component's own and stay here. */
+  --serif: var(--brand-serif);
+  --sans: var(--brand-sans);
+  --mono: var(--brand-mono);
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --teal: var(--brand-accent);
+  /* Max footprint the readout overlay can grow to (logo + a wrapped
+     2-line municipality chip list) — the readout is capped at this (see
+     .readout below) and the map's own geometry has a matching south
+     margin baked in (see the padBottom comment in DistrictMap.jsx) so
+     the overlay never sits over live map content. */
+  --readout-reserve: 168px;
+
+  --map-bed: repeating-linear-gradient(38deg, rgba(255, 255, 255, 0.022) 0 2px, transparent 2px 5px),
+    repeating-linear-gradient(-52deg, rgba(0, 0, 0, 0.03) 0 3px, transparent 3px 7px),
+    radial-gradient(120% 90% at 30% 20%, #9ba3ac 0%, #848d97 45%, #6e7781 100%);
+}
+
+html[data-theme='dark'] .district-map {
+  --frame: var(--brand-white);
+  --strip: #132038;
+  --strip-ink: var(--brand-white);
+  --strip-ink-2: #9fb2cc;
+  --strip-line: #25375a;
+  --dist-base: #16243c;
+  --dist-lo: #46689a;
+  --dist-hi: #4c97f5;
+  --dist-line: #5a7cad;
+  --dist-hover: var(--brand-white);
+  --card: #101b2e;
+  --card-line: #2a3e5f;
+  --card-ink: var(--brand-white);
+  --card-ink-2: #9fb2cc;
+  --card-ink-3: #63789a;
+}
+
+html[data-theme='light'] .district-map {
+  --frame: #132038;
+  --strip: var(--brand-white);
+  --strip-ink: var(--brand-black);
+  --strip-ink-2: #5b6e88;
+  --strip-line: #dde3ec;
+  --dist-base: #c9d3e0;
+  --dist-lo: #7e9cc4;
+  --dist-hi: #1d5fc4;
+  --dist-line: var(--brand-white);
+  --dist-hover: #0e1a2b;
+  --card: var(--brand-white);
+  --card-line: #dde3ec;
+  --card-ink: var(--brand-black);
+  --card-ink-2: #5b6e88;
+  --card-ink-3: #8c9ab0;
+  --map-bed: repeating-linear-gradient(38deg, rgba(0, 0, 0, 0.02) 0 2px, transparent 2px 5px),
+    repeating-linear-gradient(-52deg, rgba(0, 0, 0, 0.025) 0 3px, transparent 3px 7px),
+    radial-gradient(120% 90% at 30% 20%, #e8ebef 0%, #dadfe6 45%, #c8cfd8 100%);
+}
+
+#frame.district-map {
+  position: relative;
+  height: 100%;
+  min-height: 430px;
+  display: flex;
+  flex-direction: column;
+  border: 7px solid var(--frame);
+  background: var(--strip);
+  transition: border-color 0.45s var(--ease), background 0.45s var(--ease);
+  overflow: hidden;
+  font-family: var(--sans);
+}
+
+.district-map .strip {
+  background: var(--strip);
+  color: var(--strip-ink);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 10px 14px;
+  flex-wrap: wrap;
+  transition: background 0.45s var(--ease), color 0.45s var(--ease);
+}
+.district-map .strip-t {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--strip-ink);
+}
+/* Top-right header slot — company logo, placeholder text wordmark until
+   a real logo file is wired in (see BRAND_LOGO_SRC in DistrictMap.jsx). */
+.district-map .brand {
+  display: flex;
+  align-items: center;
+  height: 26px;
+  flex-shrink: 0;
+}
+.district-map .brand-logo {
+  display: block;
+  height: 100%;
+  width: auto;
+  object-fit: contain;
+}
+.district-map .brand-fallback {
+  font-family: var(--mono);
+  font-size: 8.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--strip-ink-2);
+  border: 1px solid var(--strip-line);
+  padding: 6px 10px;
+  white-space: nowrap;
+}
+
+.district-map #stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  background: var(--map-bed);
+  border-top: 1px solid var(--strip-line);
+  /* No border-bottom: the readout sits on top of this as an overlay (see
+     .readout below), not as a sibling row below it — see the comment
+     there for why. */
+}
+.district-map #stage svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+  cursor: grab;
+  touch-action: none;
+}
+.district-map #stage svg:active {
+  cursor: grabbing;
+}
+.district-map .dist {
+  cursor: pointer;
+}
+.district-map .dist-shape {
+  fill: var(--dist-base);
+  stroke: var(--dist-line);
+  stroke-width: 0.75;
+  /* Without this, a stroke scales WITH the zoom transform — a hairline
+     border at 1x would balloon into a thick blob at 20x. This pins
+     stroke width to a constant number of screen pixels regardless of
+     zoom level, which is what "no quality degradation on zoom" means for
+     line work specifically (the fills already don't degrade — they're
+     vector paths, not a raster image being stretched). */
+  vector-effect: non-scaling-stroke;
+  transition: fill 0.3s var(--ease);
+}
+.district-map .county-line {
+  fill: none;
+  stroke: var(--teal);
+  stroke-width: 1.15;
+  opacity: 0.75;
+  pointer-events: none;
+  vector-effect: non-scaling-stroke;
+}
+
+/* Drawn as a separate, always-on-top overlay (see the JSX comment for
+   why) rather than restyled in place — a plain fill-lighten wash plus
+   the bright outline, both non-interactive. */
+.district-map .dist-hover-wash {
+  fill: var(--brand-white);
+  fill-opacity: 0.15;
+}
+.district-map .dist-hover-outline {
+  fill: none;
+  stroke: var(--dist-hover);
+  stroke-width: 1.7;
+  vector-effect: non-scaling-stroke;
+}
+
+.district-map .zoom-reset {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 1;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--strip-ink-2);
+  background: var(--strip);
+  border: 1px solid var(--strip-line);
+  padding: 6px 10px;
+  cursor: pointer;
+  transition: color 0.15s var(--ease), border-color 0.15s var(--ease);
+}
+.district-map .zoom-reset:hover {
+  color: var(--strip-ink);
+  border-color: var(--strip-ink);
+}
+
+/*
+  This is deliberately an absolutely-positioned overlay pinned to the
+  bottom of #frame, NOT a normal flex sibling of #stage. It used to be a
+  regular row below the map, sized by its own content — which meant
+  hovering a district with a longer readout (a logo, two lines of
+  municipality chips) grew the readout, which shrank #stage's flex:1
+  share, which resized the map's rendered box, which moved whatever was
+  under the cursor, which could flip the hover target again — a feedback
+  loop that showed up as exactly the flicker/stutter reported when
+  hovering near a border between two differently-detailed districts.
+  Taking the readout out of flow means #stage always fills 100% of the
+  space below .strip, full stop, regardless of hover content — the map
+  never moves. The readout instead grows *upward*, overlapping the
+  bottom of the map, which is also the "extend down when there's more to
+  show" behavior that was asked for.
+*/
+.district-map .readout {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  background: var(--strip);
+  border-top: 1px solid var(--strip-line);
+  box-shadow: 0 -8px 24px -12px rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 16px;
+  min-height: 82px;
+  /* Capped at the same size #stage svg reserves for it above, and
+     scrollable as a safety net — so on the rare very-wide municipality
+     list that would wrap past 2 lines, it scrolls internally instead of
+     growing past the reserved zone and back over the map. */
+  max-height: var(--readout-reserve);
+  overflow-y: auto;
+}
+.district-map .ro-l {
+  flex: 1;
+  min-width: 0;
+}
+.district-map .ro-county {
+  font-family: var(--sans);
+  font-size: 11.5px;
+  color: var(--strip-ink-2);
+  letter-spacing: 0.02em;
+}
+.district-map .ro-name {
+  font-family: var(--sans);
+  font-weight: 600;
+  font-size: 21px;
+  line-height: 1.15;
+  color: var(--strip-ink);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.district-map .ro-name.idle {
+  font-weight: 400;
+  font-style: italic;
+  color: var(--strip-ink-2);
+  font-size: 16px;
+}
+.district-map .ro-site {
+  display: inline-block;
+  margin-top: 3px;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  color: var(--strip-ink-2);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+}
+.district-map .ro-site:hover {
+  color: var(--strip-ink);
+  border-color: var(--strip-ink);
+}
+.district-map .ro-logo {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.district-map .ro-logo img {
+  display: block;
+  max-width: 220px;
+  max-height: 64px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  animation: ro-logo-pop 0.3s var(--ease);
+}
+@keyframes ro-logo-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.88);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.district-map .ro-r {
+  text-align: right;
+  flex-shrink: 0;
+  max-width: 46%;
+}
+.district-map .ro-lbl {
+  font-family: var(--sans);
+  font-size: 11px;
+  color: var(--strip-ink-2);
+}
+.district-map .ro-munis {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 5px;
+  margin-top: 5px;
+}
+.district-map .ro-munis.idle {
+  display: block;
+  font-family: var(--sans);
+  font-style: italic;
+  font-size: 13px;
+  color: var(--strip-ink-2);
+}
+.district-map .ro-muni {
+  font-family: var(--sans);
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--strip-ink);
+  border: 1px solid var(--strip-line);
+  border-radius: 3px;
+  padding: 2px 7px;
+  white-space: nowrap;
+}
+.district-map .ro-muni-more {
+  color: var(--strip-ink-2);
+  border-style: dashed;
+  font-style: italic;
+}
+
+.district-map .map-data-error {
+  position: absolute;
+  left: 14px;
+  bottom: calc(var(--readout-reserve) + 14px);
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  color: #f2704f;
+  background: var(--strip);
+  border: 1px solid #f2704f;
+  padding: 4px 8px;
+}
+
+/*
+  ---------- click card ----------
+  position:absolute + inset:0 within #frame (not position:fixed to the
+  viewport, as the original prototype used) — this map is meant to be
+  embeddable inside a larger page (SharePoint, another React app, an
+  iframe), and a viewport-fixed overlay would either escape the widget's
+  own bounds or misposition relative to whatever it's dropped into.
+  #frame is already position:relative + overflow:hidden, so anchoring here
+  keeps the scrim and card correctly scoped to just this component no
+  matter where it's mounted.
+*/
+.district-map .scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(6, 11, 20, 0.62);
+  backdrop-filter: blur(3px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.22s var(--ease);
+  z-index: 10;
+}
+.district-map .scrim.on {
+  opacity: 1;
+  pointer-events: auto;
+}
+.district-map .card {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: min(430px, calc(100% - 28px));
+  max-height: calc(100% - 28px);
+  height: max-content;
+  background: var(--card);
+  border: 1px solid var(--card-line);
+  color: var(--card-ink);
+  z-index: 11;
+  overflow-y: auto;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(10px) scale(0.98);
+  transition: opacity 0.22s var(--ease), transform 0.22s var(--ease);
+  box-shadow: 0 26px 64px rgba(0, 0, 0, 0.5);
+}
+.district-map .card.on {
+  opacity: 1;
+  pointer-events: auto;
+  transform: none;
+}
+.district-map .card-h {
+  padding: 20px 22px 16px;
+  border-bottom: 1px solid var(--card-line);
+  position: relative;
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+.district-map .card-x {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--card-line);
+  background: none;
+  color: var(--card-ink-3);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  font-family: var(--sans);
+}
+.district-map .card-x:hover {
+  color: var(--card-ink);
+  border-color: var(--card-ink);
+}
+.district-map .card-logo {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  overflow: hidden;
+  background: rgba(127, 155, 196, 0.14);
+  border: 1px solid var(--card-line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.district-map .card-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.district-map .card-logo span {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--card-ink-3);
+}
+.district-map .card-county {
+  font-size: 11px;
+  color: var(--card-ink-2);
+}
+.district-map .card-name {
+  font-family: var(--serif);
+  font-size: 22px;
+  line-height: 1.15;
+  margin-top: 3px;
+  padding-right: 22px;
+}
+.district-map .card-badges {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+  margin-top: 9px;
+}
+.district-map .badge {
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border: 1px solid var(--card-line);
+  color: var(--card-ink-2);
+  padding: 3px 7px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.district-map .badge .d {
+  width: 6px;
+  height: 6px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+.district-map .card-stats {
+  display: flex;
+  border-bottom: 1px solid var(--card-line);
+}
+.district-map .card-stat {
+  flex: 1;
+  padding: 12px 22px;
+  border-left: 1px solid var(--card-line);
+}
+.district-map .card-stat:first-child {
+  border-left: none;
+}
+.district-map .card-stat b {
+  font-family: var(--serif);
+  font-size: 20px;
+  display: block;
+  line-height: 1;
+}
+.district-map .card-stat span {
+  font-family: var(--mono);
+  font-size: 7.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--card-ink-3);
+  display: block;
+  margin-top: 5px;
+}
+.district-map .card-sec {
+  padding: 14px 22px;
+  border-bottom: 1px solid var(--card-line);
+}
+.district-map .card-sec:last-child {
+  border-bottom: none;
+}
+.district-map .card-l {
+  font-family: var(--mono);
+  font-size: 7.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--card-ink-3);
+  margin-bottom: 7px;
+}
+.district-map .card-p {
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--card-ink-2);
+}
+.district-map .card-p + .card-p {
+  margin-top: 4px;
+}
+.district-map .card-p b {
+  color: var(--card-ink);
+  font-weight: 600;
+}
+.district-map .card-a {
+  color: var(--card-ink);
+  font-size: 12.5px;
+  text-decoration: none;
+  border-bottom: 1px solid var(--card-line);
+}
+.district-map .card-a:hover {
+  border-color: var(--card-ink);
+}
+.district-map .job {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 5px 0;
+  border-top: 1px solid var(--card-line);
+}
+.district-map .job:first-of-type {
+  border-top: none;
+}
+.district-map .job-n {
+  font-size: 12px;
+  flex: 1;
+  color: var(--card-ink);
+}
+.district-map .job-m {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  color: var(--card-ink-3);
+  white-space: nowrap;
+}
+.district-map .card-munis {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.district-map .card-muni {
+  font-family: var(--sans);
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--card-ink);
+  border: 1px solid var(--card-line);
+  border-radius: 3px;
+  padding: 2px 7px;
+  white-space: nowrap;
+}
+.district-map .muted {
+  color: var(--card-ink-3);
+  font-style: italic;
+  font-size: 12px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .district-map * {
+    animation: none !important;
+  }
+}

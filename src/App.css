@@ -1,0 +1,65 @@
+/*
+  App shell: the homepage renders full-bleed; Project Map and BD Directory
+  render inside a bounded, centered frame (they were built as fixed-aspect
+  embeddable widgets, not full pages — see each component's own README
+  notes) with a persistent "back to hub" bar above them.
+*/
+.app-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--brand-black);
+}
+
+.tool-chrome {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 24px;
+  background: var(--brand-black);
+  border-bottom: 1px solid var(--brand-navy);
+  font-family: var(--brand-sans);
+}
+
+.back-to-hub {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: rgba(255, 255, 255, 0.75);
+  padding: 7px 14px;
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: 12px;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.back-to-hub:hover {
+  border-color: var(--brand-accent);
+  color: var(--brand-accent);
+}
+
+/* Pushes the map↔BD-directory toggle to the right edge of the bar, opposite
+   the "back to hub" button. */
+.switch-tool {
+  margin-left: auto;
+}
+
+.tool-chrome-title {
+  font-family: var(--brand-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.tool-frame {
+  width: min(1200px, 100%);
+  height: min(760px, 88vh);
+  margin: 24px auto;
+  box-sizing: border-box;
+}
+
+.tool-frame > * {
+  height: 100%;
+}

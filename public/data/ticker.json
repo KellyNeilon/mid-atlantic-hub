@@ -1,0 +1,41 @@
+{
+  "updated": "2026-09-03T00:00:00Z",
+  "source": "placeholder",
+  "items": [
+    {
+      "kind": "event",
+      "label": "Sep 18 — Access gate review",
+      "href": null
+    },
+    {
+      "kind": "event",
+      "label": "Oct 30 — Hub live behind Entra",
+      "href": null
+    },
+    {
+      "kind": "event",
+      "label": "Dec 18 — Ship date",
+      "href": null
+    },
+    {
+      "kind": "news",
+      "label": "Project Map is live",
+      "href": "https://black-beach-08680560f.7.azurestaticapps.net?tool=map"
+    },
+    {
+      "kind": "news",
+      "label": "BD Directory added to the Hub",
+      "href": "https://black-beach-08680560f.7.azurestaticapps.net?tool=bd"
+    },
+    {
+      "kind": "news",
+      "label": "513 organisations now tracked in the Brain database",
+      "href": null
+    },
+    {
+      "kind": "news",
+      "label": "Marketing Hub homepage — under construction",
+      "href": null
+    }
+  ]
+}

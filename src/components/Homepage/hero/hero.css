@@ -1,0 +1,329 @@
+/* ==========================================================================
+   hero.css — Pennsylvania sun transition
+   --------------------------------------------------------------------------
+   One number runs everything: --day-t, a 0..1 position through a 17-frame
+   sun sequence. Because it is a *registered* custom property the browser can
+   interpolate it like any other animatable value, so a theme switch is a
+   single transition on a single number. Every frame's opacity and the scrim
+   strength are pure calc() functions of it, which is why the switch travels
+   through the whole afternoon instead of cutting across.
+
+   No JavaScript runs per frame. What each frame costs is one calc() recompute
+   on 17 nodes; the resulting opacity change composites on the GPU.
+
+   LOCKED 2026-09-02. The background is settled: 17 frames, light on 00, dark
+   on 16, 1400ms, easeInOutSine. The scene has no UI of its own and never
+   should — the single control anywhere in the product is the moon/sun toggle
+   at the right of the pinned bottom bar, which sets `theme` and nothing else.
+   If a knob is ever wanted again, it belongs in the bench, not on the page.
+
+   The frame timings are not in this file — they are the `t` values in
+   daylight.js, spaced by measured colour distance, and they are what makes
+   the sequence read at an even rate rather than lurching. Changing --dur-plate
+   changes how long the whole sweep takes; it cannot change the pacing within
+   it.
+   ========================================================================== */
+
+@property --day-t   { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --atmos-t { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --text-t  { syntax: '<number>'; inherits: true; initial-value: 1; }
+
+/* The animated numbers live on the PAGE SHELL, not on the scene. Custom
+   properties inherit down the DOM and not across it, and the scene is a
+   sibling of the hero copy, the cards and the map — so published from here,
+   every one of them inherits `--day-t` for free. That is what lets the map
+   panel's glass tint track the daylight with no wiring, and it is the fix for
+   design-lock O8. Apply `sceneStyle(theme)` from daylight.js to this element. */
+.mh-daylight {
+
+  /* easeInOutSine — soft at both ends, constant through the middle.
+     The old curve here was deliberately steep in the middle to rush past the
+     half-mixed state of a two-plate cross-fade, because that state looked
+     like neither time of day. There is no such state any more: every point in
+     this sequence is a real frame of a real afternoon, so the right curve is
+     the one that makes it play at an even rate. */
+  --ease: cubic-bezier(0.45, 0, 0.55, 1);
+  --dur-plate: 1400ms;   /* LOCKED 2026-09-02 — Kelly's call, don't drift it */
+  --dur-atmos: 1400ms;
+  --dur-text:   500ms;
+
+  transition:
+    --day-t   var(--dur-plate) var(--ease),
+    --atmos-t var(--dur-atmos) var(--ease),
+    --text-t  var(--dur-text)  var(--ease);
+}
+
+.mh-scene {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  isolation: isolate;
+  /* The canvas the contained photo floats on. `--mh-bg` is the same token
+     the rest of the shell uses for its base surface (defined on .hub2-shell
+     in Homepage.css) — brand-black in dark, brand-white in light — so this
+     flips with the theme toggle automatically, no separate wiring.
+     `transition` here is what makes it fade at the SAME rate as the photo
+     rather than snapping instantly: --mh-bg itself can't be interpolated
+     (it's a plain custom property, not a registered one like --day-t), but
+     background-color transitions don't need that — they animate between
+     whatever the resolved color was before and after the value changed, so
+     reusing --dur-plate/--ease (the exact variables driving the photo's own
+     1400ms cross-fade, published on .mh-daylight above) keeps the two
+     locked together by construction — change one and the other follows. */
+  background: var(--mh-bg);
+  transition: background-color var(--dur-plate) var(--ease);
+  --px: 0px;
+  --py: 0px;
+}
+
+/* ---------- plates ------------------------------------------------------ */
+
+.mh-plates {
+  position: absolute;
+  inset: 0;
+  transform: translate3d(var(--px), var(--py), 0);
+  transition: transform 700ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
+/* The stack is scaled a touch only when parallax is on, so the drift never
+   exposes an edge. Parallax off means no scale at all. */
+.mh-scene[data-parallax='1'] .mh-plates { scale: 1.035; }
+
+.mh-plates picture { display: contents; }
+
+/* Contained, not cropped (2026-09-04, Kelly's call — replaces the old
+   object-fit: cover crop). The box is sized to the sequence's actual
+   1717:912 frame and centered inside .mh-scene via inset:0 + margin:auto +
+   max-width/max-height:100%, rather than stretched to fill the viewport —
+   so at any window size the full photograph shows, nothing is ever cut off
+   top/bottom or left/right, and there is no upscaling past the source
+   resolution either. This is also what makes "full width" and "fully
+   contained" both true at once: .mh-scene still fills the whole hero
+   edge to edge, but the photo inside it never crops to force that. */
+.mh-plate {
+  position: absolute;
+  /* Homed to the left 3/4 (2026-09-04, Kelly's call), not the full shell.
+     .mh-scene itself stays inset:0 — the canvas colour, the atmosphere and
+     the legibility scrims are all still full width — only the PHOTO's own
+     positioning box is pulled in on the right, by a fraction of
+     --mh-right-col (published on .hub2-shell, Homepage.css). That box is
+     still wider than the left column alone, so the photo is allowed to
+     bleed into the map column past the 3/4 line — "one continuous banner",
+     not a hard stop at the grid boundary — but because the mask below fades
+     to fully transparent AT this box's own edge, whatever bleeds past the
+     boundary is already fading out before it gets there. Left stays inset 0,
+     unchanged, same edge-to-edge feel as before.
+     Sizing math: object-fit: contain still picks the largest size that fits
+     the box's height OR width. At any realistic hero height this box is
+     still wide enough that height keeps limiting the photo's actual size —
+     narrowing the box only re-centers it further left, it doesn't shrink
+     the photograph. */
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: calc(var(--mh-right-col, 380px) * 0.55);
+  margin: auto;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
+  aspect-ratio: 1717 / 912;
+  object-fit: contain;
+  user-select: none;
+
+  /* Left and right edges fade out; top and bottom don't (2026-09-04,
+     Kelly's call — replaces the radial vignette, which faded all four
+     sides). One horizontal gradient: the picture is solid through the
+     middle and dissolves to nothing at each side, which takes the left and
+     right corners with it since they sit at the ends of those same edges.
+     Percentages are relative to THIS box, which (thanks to the sizing
+     above) is exactly the rendered photo's own bounds, not the scene's, so
+     the fade always lands on the picture's real edge whatever shape the
+     window is. */
+  mask-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    #000 14%,
+    #000 86%,
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    #000 14%,
+    #000 86%,
+    transparent 100%
+  );
+  /* opacity comes from an inline var(--o-<i>) generated by daylight.js:
+     frame 00 is pinned at 1 and every frame above dissolves in over the one
+     below it, so the stack is never transparent and the background can never
+     show through mid-fade. */
+}
+
+/* Fallback path: where @property is unsupported --day-t snaps at the midpoint
+   instead of interpolating, so every frame's opacity would jump 0 -> 1 at once
+   and the middle of the stack would pile up. Show only the two endpoints and
+   let opacity itself transition — same cross-fade, minus the travel-through.
+   On the smooth path this transition must NOT exist, or it would chase the
+   continuously-changing calc() value and lag behind it. */
+.mh-scene[data-smooth='0'] .mh-plate:not([data-endpoint]) { display: none; }
+.mh-scene[data-smooth='0'] .mh-plate {
+  transition: opacity var(--dur-plate) var(--ease);
+}
+
+/* ---------- atmosphere -------------------------------------------------- */
+
+.mh-atmos { position: absolute; inset: 0; pointer-events: none; }
+
+/* Structural, not decorative: the ticker sits on the top band and the pinned
+   nav bar on the bottom one. Strength tracks --scene-bright so it eases off as
+   the sun goes down and the photograph stops needing the help. */
+.mh-atmos-density {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgb(4 12 26 / calc(0.30 + 0.22 * var(--scene-bright))) 0%,
+    rgb(4 12 26 / 0) 26%,
+    rgb(4 12 26 / 0) 62%,
+    rgb(4 12 26 / calc(0.34 + 0.30 * var(--scene-bright))) 100%
+  );
+}
+
+/* ---------- overlay ----------------------------------------------------- */
+
+.mh-overlay { position: absolute; inset: 0; pointer-events: none; }
+
+/* The legibility scrim, and its mirror image.
+   -------------------------------------------------------------------------
+   The hero type is white on the dark theme and dark navy on the light one, so
+   one scrim cannot serve both: what holds white type up makes navy type
+   disappear. There are two, and each is scaled by --day-t so it is at full
+   strength at its own end of the sequence and gone at the other. Within that,
+   strength still tracks --scene-bright — the live weighted average of the
+   *measured* luminance of whichever two frames are on screen — so each one
+   deepens exactly as much as the photograph fights it, with nothing to
+   re-tune if the sequence is ever re-rendered.
+
+   Both are anchored LEFT and gone by ~70% across, because that is where the
+   hero stack is. By the time either reaches the map panel it is effectively
+   zero (measured: 0.015), so the glass sits over an untouched photograph. */
+.mh-scrim-left {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    100deg,
+    rgb(3 10 22 / calc((0.52 + 0.26 * var(--scene-bright)) * var(--day-t))) 0%,
+    rgb(3 10 22 / calc((0.30 + 0.20 * var(--scene-bright)) * var(--day-t))) 34%,
+    rgb(3 10 22 / 0) 68%
+  );
+}
+
+/* The white veil, for dark ink on the light theme.
+   0.52 was the original measured value: at 0 the darkest 5% of the
+   photograph under the hero stack gives #0E1A2B only 1.30:1 against the
+   locked ink #060f1d, which is unreadable; at 0.52 the worst case is 5.94:1
+   and the photograph keeps 78% of its own contrast. Kelly dialed it back to
+   0.45 on 2026-09-03 for a lighter touch — recomputed against the same two
+   reference colours, the worst case is still ~4.9:1, comfortably above the
+   4.5:1 AA floor.
+   Raise --mh-veil-max back toward 0.52-0.62 if the faded grey secondary
+   inks need to come back; below that they carry hierarchy by size and
+   weight instead. */
+.mh-veil {
+  position: absolute;
+  inset: 0;
+  --mh-veil-max: 0.45;
+  background: linear-gradient(
+    100deg,
+    rgb(255 255 255 / calc(var(--mh-veil-max) * (1 - var(--day-t)))) 0%,
+    rgb(255 255 255 / calc(var(--mh-veil-max) * (1 - var(--day-t)))) 42%,
+    rgb(255 255 255 / 0) 74%
+  );
+}
+
+.mh-scrim-top {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 128px;
+  background:
+    linear-gradient(to bottom, rgb(3 10 22 / calc((0.42 + 0.22 * var(--scene-bright)) * var(--day-t))), transparent),
+    linear-gradient(to bottom, rgb(255 255 255 / calc(0.46 * (1 - var(--day-t)))), transparent);
+}
+
+.mh-scrim-bottom {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 190px;
+  background:
+    linear-gradient(to top, rgb(3 10 22 / calc((0.46 + 0.24 * var(--scene-bright)) * var(--day-t))), transparent),
+    linear-gradient(to top, rgb(255 255 255 / calc(0.50 * (1 - var(--day-t)))), transparent);
+}
+
+/* Cool bloom, strongest at the dark end where the photograph goes warm. */
+.mh-glow {
+  position: absolute;
+  inset: 0;
+  mix-blend-mode: screen;
+  opacity: calc(0.30 + 0.42 * (1 - var(--scene-bright)));
+  background:
+    radial-gradient(60% 55% at 18% 78%, rgb(76 193 190 / 0.20) 0%, transparent 62%),
+    radial-gradient(52% 48% at 86% 22%, rgb(120 190 255 / 0.14) 0%, transparent 66%);
+}
+
+/* ---------- variables published to the content layer -------------------- */
+/* WIRED as of the O8 fix. These sit on .mh-daylight — the page shell — so the
+   hero copy, search bar, cards and map all inherit them. They retint on the
+   500ms --text-t clock while the photograph is still moving on the 1400ms one,
+   so the type settles first and the sky catches up, which is what stops a
+   theme switch landing as one blunt cut.
+
+   --hero-ink flips with the theme now: white at the dark end, the locked navy
+   at the light end, riding on the white veil above. */
+.mh-daylight {
+  --hero-ink: color-mix(in srgb, var(--brand-black) calc((1 - var(--text-t)) * 100%), var(--brand-white));
+  --hero-ink-dim: color-mix(in srgb, rgb(6 15 29 / 0.92) calc((1 - var(--text-t)) * 100%), rgb(255 253 250 / 0.74));
+  --hero-ink-shadow: 0 2px 18px rgb(2 8 18 / calc(0.34 * var(--text-t)));
+  --hero-glass-bg: rgb(255 255 255 / calc(0.07 + 0.06 * var(--text-t)));
+  --hero-glass-border: rgb(255 255 255 / calc(0.13 + 0.09 * var(--text-t)));
+  --hero-glass-blur: 18px;
+  --hero-panel-shadow: 0 24px 70px rgb(2 8 18 / calc(0.30 + 0.26 * var(--text-t)));
+}
+
+.mh-scene > *:not(.mh-plates):not(.mh-atmos):not(.mh-overlay) {
+  position: relative;
+  z-index: 1;
+}
+
+/* ---------- accessibility ---------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .mh-scene {
+    --dur-plate: 220ms;
+    --dur-atmos: 220ms;
+    --dur-text: 160ms;
+  }
+  .mh-plates {
+    transition: none;
+    transform: none;
+    scale: 1;
+  }
+}
+
+/* Pointer drift is desktop-only; below this the plates sit flat and still. */
+@media (max-width: 900px), (pointer: coarse) {
+  .mh-plates {
+    transform: none;
+    scale: 1;
+    transition: none;
+  }
+}
+
+/* Windows High Contrast / forced colours: drop the photograph entirely so the
+   forced background wins and the type stays readable. */
+@media (forced-colors: active) {
+  .mh-plates,
+  .mh-atmos,
+  .mh-veil,
+  .mh-glow { display: none; }
+}

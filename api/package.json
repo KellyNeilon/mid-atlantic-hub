@@ -1,0 +1,8 @@
+{
+  "name": "marketing-hub-api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Managed functions for the Marketing Hub Static Web App. No dependencies on purpose — node 20's built-in fetch does everything /api/ask needs.",
+  "main": "ask/index.js",
+  "engines": { "node": ">=20" }
+}

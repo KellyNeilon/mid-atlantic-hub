@@ -1,0 +1,238 @@
+/* ==========================================================================
+   MapPanel.css — the liquid-glass frame for the Project Map
+   --------------------------------------------------------------------------
+   Self-contained. The only things this file reads from outside are --day-t
+   (0 = light end of the daylight scene, 1 = dark end) and the accent, both of
+   which it falls back on sensibly if the panel is used somewhere that does not
+   publish them. Nothing else about the hub leaks in here.
+
+   Layer order inside the body, bottom to top:
+     1  lens     backdrop-filter: url(#mh-lens) — bends and frosts the backdrop
+     2  tint     theme colour: navy-teal at the dark end, warm white at the light
+     3  content  the map itself — in front of the lens, so it stays crisp
+     4  sheen    specular highlight + diagonal
+     5  hem      floor shading so the glass meets the solid footer
+     6  fringe   chromatic hairline; also hides the displacement edge artefact
+   ========================================================================== */
+
+.mh-map {
+  --mh-map-accent: var(--brand-accent);
+  --mh-map-chrome: var(--brand-navy-grad);  /* header and footer, SAME in both themes */
+  --mh-map-radius: clamp(10px, 1.1vw, 18px);
+  --mh-map-tilt-y: -6.5deg;
+  --mh-map-tilt-x: 2deg;
+  --mh-map-lean: 3deg;           /* how far it leans toward the cursor */
+
+  position: relative;
+  min-height: 0;
+  perspective: 1500px;
+  perspective-origin: 60% 40%;
+}
+
+.mh-glass-defs { position: absolute; width: 0; height: 0; overflow: hidden; }
+
+.mh-map-frame {
+  --mx: 0;
+  --my: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--mh-map-radius);
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 0.18);
+  box-shadow:
+    0 2px 6px rgb(2 8 18 / 0.34),
+    0 34px 70px -22px rgb(2 8 18 / 0.62);
+  transform:
+    rotateY(calc(var(--mh-map-tilt-y) + var(--mx) * var(--mh-map-lean)))
+    rotateX(calc(var(--mh-map-tilt-x) + var(--my) * (var(--mh-map-lean) * -1)));
+  transition: transform 520ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.mh-map[data-tilt='0'] .mh-map-frame { transform: none; }
+
+/* ---------- the two solid rows ------------------------------------------ */
+/* These are the only opaque parts of the panel, and they are the reason the
+   body reads as glass at all: the eye needs something solid alongside to
+   measure the transparency against. Locked to one colour in both themes. */
+.mh-map-head,
+.mh-map-foot {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: clamp(7px, 0.85vw, 13px) clamp(10px, 1.1vw, 16px);
+  background: var(--mh-map-chrome);
+  color: rgb(255 255 255 / 0.82);
+  font-family: var(--brand-mono);
+  font-size: clamp(8px, 0.62vw, 10px);
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+/* The base accent is 4.36:1 on navy — fine for large type, under the bar for
+   10px uppercase mono. This one use takes the lifted variant (4.63:1). The map
+   artwork below keeps the base accent: it sits on the glass, over the
+   photograph, where the base reads at 8.83:1 against the dark ground. */
+.mh-map-head b { font-weight: 600; color: var(--brand-accent-lift); }
+
+.mh-map-zoom { display: flex; align-items: center; gap: 2px; }
+.mh-map-zoom button {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: rgb(255 255 255 / 0.7);
+  font: inherit;
+  font-size: 12px;
+  line-height: 1;
+  padding: 3px 6px;
+  border-radius: 3px;
+  cursor: pointer;
+}
+.mh-map-zoom button:hover { background: rgb(255 255 255 / 0.1); color: var(--brand-white); }
+.mh-map-zoom button:focus-visible { outline: 2px solid var(--mh-map-accent); outline-offset: 1px; }
+
+/* ---------- the glass body ---------------------------------------------- */
+.mh-map-stage { position: relative; flex: 1; min-height: 0; overflow: hidden; }
+
+/* This is the whole effect. Everything else on this page is dressing. */
+.mh-map-lens {
+  position: absolute;
+  inset: 0;
+  backdrop-filter: url(#mh-lens);
+}
+/* Where SVG filters in backdrop-filter are not honoured, fall back to a plain
+   frost. Same transparency, same theme reactivity, just no refraction. */
+@supports not (backdrop-filter: url(#mh-lens)) {
+  .mh-map-lens { backdrop-filter: blur(15.4px) saturate(1.25); }
+}
+
+/* Theme tint, blended straight off --day-t so it tracks the daylight scene
+   with no JavaScript and no wiring: cool navy-teal at the dark end, an airy
+   warm white at the light end. Kept low enough that the photograph reads. */
+.mh-map-tint {
+  position: absolute;
+  inset: 0;
+  --t: var(--day-t, 1);
+  background: rgb(
+    calc(14 + 216 * (1 - var(--t)))
+    calc(38 + 186 * (1 - var(--t)))
+    calc(52 + 158 * (1 - var(--t)))
+    / calc(0.24 + 0.12 * (1 - var(--t)))
+  );
+}
+
+.mh-map-content { position: absolute; inset: 0; }
+.mh-map-content > * { width: 100%; height: 100%; display: block; }
+
+.mh-map-sheen {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  background:
+    radial-gradient(62% 46% at 14% 6%, rgb(255 255 255 / 0.34) 0%, transparent 62%),
+    linear-gradient(118deg, transparent 38%, rgb(255 255 255 / 0.1) 48%, transparent 57%);
+}
+
+.mh-map-hem {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 26%;
+  pointer-events: none;
+  --t: var(--day-t, 1);
+  background: linear-gradient(
+    to top,
+    rgb(6 18 32 / calc(0.42 * var(--t))),
+    transparent
+  );
+}
+.mh-map-hem::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  --t: var(--day-t, 1);
+  background: linear-gradient(
+    to top,
+    rgb(255 255 255 / calc(0.4 * (1 - var(--t)))),
+    transparent
+  );
+}
+
+/* The dispersion cue real glass gives off — and, not incidentally, the thing
+   that covers the 1–2px edge artefact feDisplacementMap leaves when it samples
+   past the element's boundary. Pink one side, blue the other. */
+.mh-map-fringe {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: var(--mh-map-radius);
+  box-shadow:
+    inset 1.5px 0 0 rgb(255 122 200 / 0.42),
+    inset -1.5px 0 0 rgb(112 176 255 / 0.42),
+    inset 0 1px 0 rgb(255 255 255 / 0.3),
+    inset 0 -1px 0 rgb(255 255 255 / 0.1);
+}
+
+/* ---------- responsive + accessibility ---------------------------------- */
+/* Desktop is the design target. These two rules are the whole mobile story
+   for this component: sit flat, lose the perspective, keep the glass. The
+   phone layout decides where the panel goes; the panel does not care. */
+@media (max-width: 900px), (pointer: coarse) {
+  .mh-map { perspective: none; }
+  .mh-map-frame { transform: none; transition: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mh-map-frame { transform: none; transition: none; }
+}
+
+/* Windows High Contrast: drop the glass entirely so the forced colours win. */
+@media (forced-colors: active) {
+  .mh-map-lens,
+  .mh-map-tint,
+  .mh-map-sheen,
+  .mh-map-hem,
+  .mh-map-fringe { display: none; }
+  .mh-map-frame { border: 1px solid CanvasText; }
+}
+
+/* ---------- placeholder map artwork ------------------------------------- */
+/* Styles for PaOutline. Delete alongside it when DistrictMap goes in — the
+   real map brings its own. Everything here is about surviving a photograph
+   behind it: strokes are heavy, and each shape carries its own dark or light
+   halo so it never dissolves into whatever the sky is doing that minute. */
+.mh-pa { width: 100%; height: 100%; display: block; }
+
+.mh-pa-grid {
+  fill: none;
+  stroke: rgb(255 255 255 / calc(0.22 * var(--day-t, 1) + 0.22 * (1 - var(--day-t, 1))));
+  stroke-width: 1.6;
+}
+
+.mh-pa-outline {
+  fill: rgb(6 20 36 / calc(0.20 * var(--day-t, 1)));
+  stroke: var(--mh-map-accent);
+  stroke-width: 5;
+  stroke-linejoin: round;
+  paint-order: stroke fill;
+  filter:
+    drop-shadow(0 0 3px rgb(2 8 18 / calc(0.9 * var(--day-t, 1))))
+    drop-shadow(0 3px 10px rgb(2 8 18 / calc(0.55 * var(--day-t, 1))));
+}
+
+.mh-pa-dot {
+  fill: var(--brand-white);
+  stroke: var(--brand-navy);
+  stroke-width: 2.5;
+  filter: drop-shadow(0 1px 4px rgb(2 8 18 / 0.8));
+}
+
+.mh-pa-home {
+  fill: #e39a4f;
+  stroke: var(--brand-white);
+  stroke-width: 3;
+  filter: drop-shadow(0 1px 5px rgb(2 8 18 / 0.85));
+}

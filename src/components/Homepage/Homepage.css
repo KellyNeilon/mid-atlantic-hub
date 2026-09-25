@@ -1,0 +1,763 @@
+/*
+  Marketing Hub homepage — built against the locked design
+  (claude/homepage-design-lock.md). The palette and type stacks come from
+  src/styles/tokens.css, which every component now shares, so this reads as
+  one product by construction rather than by three files agreeing. The
+  --mh-* names below are local aliases: what each value is FOR here.
+*/
+
+.hub2-shell {
+  /* Local names for what each value is FOR; the values themselves live once,
+     in src/styles/tokens.css. */
+  --mh-accent: var(--brand-accent);
+  --mh-accent-text: var(--brand-accent);
+  --mh-accent-fill: var(--brand-accent);
+  --mh-bg: var(--brand-black);
+  --mh-panel: rgba(16, 27, 46, 0.72);
+  --mh-panel-solid: var(--brand-navy-grad);
+  --mh-line: rgba(255, 255, 255, 0.14);
+  --mh-ink: var(--brand-white);
+  --mh-ink-2: rgb(255 253 250 / 0.68);
+  --mh-ink-3: rgb(255 253 250 / 0.42);
+
+  --serif: var(--brand-serif);
+  --sans: var(--brand-sans);
+  --mono: var(--brand-mono);
+
+  /* The map column's width, named once so the hero photo (hero.css) can
+     read the same number when it decides how far it's allowed to bleed
+     into that column. Same in both themes — only the content changes. */
+  --mh-right-col: clamp(280px, 25vw, 420px);
+
+  position: relative;
+  height: 100vh;
+  width: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  color: var(--mh-ink);
+  font-family: var(--sans);
+  isolation: isolate;
+}
+
+html[data-theme='light'] .hub2-shell {
+  --mh-accent-text: var(--brand-accent-ink);
+  --mh-accent-fill: var(--brand-accent-fill);
+  --mh-bg: var(--brand-white);
+  --mh-panel: rgba(255, 255, 255, 0.6);
+  --mh-line: rgba(14, 26, 43, 0.14);
+  --mh-ink: var(--brand-black);
+  --mh-ink-2: rgb(6 15 29 / 0.68);
+  --mh-ink-3: rgb(6 15 29 / 0.42);
+}
+
+/* ---- Background plate -------------------------------------------------
+   Stand-in for Kelly's PA sunrise/sunset composite photo (design-lock:
+   "Sunrise / sunset cross-fade... slow parallax on pointer"). Drop the
+   real photo in as this element's background-image and the cross-fade
+   variables below already do the rest. */
+.hub2-bg {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--mh-bg);
+  background-image: radial-gradient(
+      120% 90% at 12% 8%,
+      rgba(76, 193, 190, 0.16),
+      transparent 55%
+    ),
+    linear-gradient(160deg, #0a1220 0%, #0c1a2e 55%, #0a1220 100%);
+  transition: background-color 0.4s ease;
+}
+
+html[data-theme='light'] .hub2-bg {
+  background-image: radial-gradient(
+      120% 90% at 12% 8%,
+      rgba(20, 128, 125, 0.14),
+      transparent 55%
+    ),
+    linear-gradient(160deg, #f7f9fb 0%, #eef2f6 55%, #f4f6f9 100%);
+}
+
+.hub2-bg-sun {
+  position: absolute;
+  top: 22%;
+  left: 8%;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #d9a441 0%, rgba(217, 164, 65, 0) 70%);
+  opacity: 0.55;
+  filter: blur(2px);
+  transition: top 0.4s ease, opacity 0.4s ease, background 0.4s ease;
+}
+
+html[data-theme='light'] .hub2-bg-sun {
+  top: 10%;
+  opacity: 0.4;
+  background: radial-gradient(circle, #fff3d6 0%, rgba(255, 243, 214, 0) 70%);
+}
+
+/* ---- Ticker ------------------------------------------------------------ */
+.hub2-ticker {
+  flex: none;
+  overflow: hidden;
+  border-bottom: 1px solid var(--mh-line);
+  background: rgba(0, 0, 0, 0.12);
+}
+
+html[data-theme='light'] .hub2-ticker {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.hub2-ticker-track {
+  display: flex;
+  gap: 40px;
+  white-space: nowrap;
+  padding: 9px 24px;
+  width: max-content;
+  animation: hub2-ticker-scroll 90s linear infinite;
+}
+
+.hub2-ticker:hover .hub2-ticker-track {
+  animation-play-state: paused;
+}
+
+@keyframes hub2-ticker-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.hub2-ticker-item {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--mh-ink-2);
+  text-decoration: none;
+}
+
+a.hub2-ticker-item:hover {
+  color: var(--mh-accent-text);
+}
+
+.hub2-ticker-item-static {
+  color: var(--mh-ink-3);
+}
+
+/* ---- Main two-column row ------------------------------------------------ */
+.hub2-main {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--mh-right-col);
+  gap: 40px;
+  padding: 44px 56px 20px;
+  box-sizing: border-box;
+}
+
+.hub2-left {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 28px;
+}
+
+.hub2-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 18px;
+  max-width: 558px;
+}
+
+.hub2-logo {
+  height: 36px;
+  width: auto;
+  object-fit: contain;
+}
+
+.hub2-title {
+  margin: 0;
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: clamp(38px, 5.2vw, 72px);
+  line-height: 1.02;
+  letter-spacing: 0.01em;
+}
+
+.hub2-title span {
+  letter-spacing: 0.05em;
+  color: var(--mh-accent-text);
+}
+
+.hub2-search {
+  width: 100%;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--brand-white);
+  border-radius: 999px;
+  padding: 0 8px 0 22px;
+  box-shadow: 0 18px 40px -22px rgba(0, 0, 0, 0.6);
+}
+
+html[data-theme='light'] .hub2-search {
+  background: rgba(10, 28, 50, 0.95);
+}
+
+.hub2-search input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  font-family: var(--sans);
+  font-size: 14.5px;
+  color: var(--brand-black);
+}
+
+html[data-theme='light'] .hub2-search input {
+  color: var(--brand-white);
+}
+
+.hub2-search input::placeholder {
+  color: rgba(14, 26, 43, 0.45);
+}
+
+html[data-theme='light'] .hub2-search input::placeholder {
+  color: rgba(244, 246, 249, 0.55);
+}
+
+.hub2-search button {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 0;
+  background: var(--mh-accent);
+  color: #06231f;
+  font-size: 16px;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.hub2-search button:hover {
+  transform: scale(1.06);
+}
+
+.hub2-prompt-line {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  letter-spacing: 0.02em;
+  color: var(--mh-ink-3);
+}
+
+/* ---- Info card slider ----------------------------------------------------
+   Sized to show exactly 5.5 cards (Kelly's call): the ".5" is deliberate —
+   the trailing half-card is clipped by this container and then covered by
+   the right feather below, so it reads as fading out from under the map
+   column rather than getting cut off. The row itself no longer scrolls
+   natively; InfoSlider drives .hub2-slider-track's transform directly (a
+   continuous drift, paused on hover/drag — see Homepage.jsx), so this is
+   just the clipping viewport and the two edge fades. Fixed pixel math is
+   fine here: this is explicitly a desktop-only pass, no mobile version yet. */
+.hub2-slider {
+  --mh-card-w: 150px;
+  --mh-card-gap: 16px;
+  /* flex: none + an explicit height, not just content sizing — a block
+     child with overflow:hidden inside a flex column can legally collapse
+     to 0 height when the column is short on room (its automatic min-height
+     stops being content-based the moment overflow isn't visible). Bit us
+     in testing: the row was there, transform-driven and correct, in a
+     parent that had quietly squeezed it to nothing. Height matches the
+     track's own content height (190px card + 4px top/bottom padding). */
+  flex: none;
+  height: 198px;
+  position: relative;
+  margin-left: -56px;
+  width: calc(var(--mh-card-w) * 5.5 + var(--mh-card-gap) * 5 + 56px);
+  overflow: hidden;
+}
+
+/* Dragging lifts the clip entirely (2026-09-04, Kelly's call — a card being
+   dragged was getting cut off at this container's edges). Two things have to
+   happen together: overflow goes visible so the card can leave the box, and
+   the whole slider gets a z-index so it rises above the map panel — the
+   track's `will-change: transform` makes it a stacking context, so a card's
+   own z-index can't escape it on its own. Homepage.jsx keeps this attribute
+   on until the snap-back animation has finished, otherwise the clip would
+   come back mid-flight. The slots outside the visible window are hidden
+   while it's off (see below) so lifting the clip doesn't dump the rest of
+   the doubled list across the map column. */
+.hub2-slider[data-dragging='1'] {
+  overflow: visible;
+  z-index: 50;
+}
+
+.hub2-slider-track {
+  display: flex;
+  gap: var(--mh-card-gap);
+  padding: 4px 0 4px 56px;
+  will-change: transform;
+}
+
+/* One slot per card. The slot owns the card's PLACE in the row; the card
+   owns where it is relative to that place. Keeping them separate is what
+   lets the reshuffle animate: on a drop, Homepage.jsx FLIPs the slots to
+   their new positions while the card itself springs back to zero, and the
+   two together read as one continuous movement. */
+.hub2-card-slot {
+  flex: none;
+  position: relative;
+}
+
+/* The dragged card's slot rides above its neighbours. It has to be the slot,
+   not the card: the slots are siblings, so a z-index on the card alone only
+   sorts it within its own slot. */
+.hub2-card-slot:has(> .hub2-card[data-dragging='1']),
+.hub2-card-slot:has(> .hub2-card[data-returning='1']) {
+  z-index: 999;
+}
+
+.hub2-slider[data-dragging='1'] .hub2-card-slot[data-off='1'] {
+  visibility: hidden;
+}
+
+.hub2-slider-feather {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+
+.hub2-slider-feather-left {
+  left: 0;
+  width: 56px;
+  background: linear-gradient(90deg, var(--mh-bg), transparent);
+}
+
+/* Wider than the left one on purpose — roughly half a card plus its gap,
+   so the trailing card genuinely fades rather than just losing its last
+   few pixels. This is the ".5" in "5.5 cards". */
+.hub2-slider-feather-right {
+  right: 0;
+  width: 92px;
+  background: linear-gradient(270deg, var(--mh-bg), transparent 78%);
+}
+
+.hub2-card {
+  --mx: 50%;
+  --my: 50%;
+  --drag-x: 0px;
+  --drag-y: 0px;
+  --glow-angle: 0deg;
+  --glow-p: 0;
+  display: block;
+  width: 150px;
+  height: 190px;
+  border-radius: 16px;
+  overflow: hidden;
+  position: relative;
+  text-decoration: none;
+  color: var(--brand-white);      /* the art is always dark behind the copy */
+  background: var(--mh-panel);
+  border: 1px solid var(--mh-line);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  box-sizing: border-box;
+  transform: translate3d(var(--drag-x), var(--drag-y), 0);
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+/* All eight cards are interactive at all times, soon-to-link ones included
+   (Kelly's call) — the only thing card.href changes is whether release
+   navigates anywhere. */
+.hub2-card:hover {
+  transform: translate3d(var(--drag-x), var(--drag-y), 0) scale(1.05);
+  border-color: var(--mh-accent);
+  z-index: 2;
+}
+
+/* While a card is actually being dragged: no transform transition (it must
+   follow the pointer with zero lag), and a deeper shadow to read as lifted
+   off the row. The z-index that matters lives on the slot, above. */
+.hub2-card[data-dragging='1'] {
+  transition: border-color 0.2s ease;
+  cursor: grabbing;
+  z-index: 6;
+  box-shadow: 0 26px 60px -14px rgba(2, 8, 18, 0.55);
+}
+
+/* The instant after release: a springier transition carries --drag-x/-y
+   (already reset to 0 by the pointerup handler) back to the slot — which by
+   then may itself have MOVED, because a drop reshuffles the row. The card
+   travels to wherever its slot now is; Homepage.jsx drops this attribute
+   ~460ms later so the next hover uses the normal fast transition again. */
+.hub2-card[data-returning='1'] {
+  transition: transform 460ms cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.2s ease;
+}
+
+.hub2-card-soon {
+  cursor: grab;
+}
+
+/* Art fills the whole card — the copy sits on top of it, not below it. */
+.hub2-card-art {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: linear-gradient(135deg, #23324e, #12233c);
+  background-size: cover;
+  background-position: center;
+}
+
+/* Legibility floor under the copy. The art is a designed gradient rather than
+   a photograph, so this can be gentle — it exists to survive a light-topped
+   gradient, not to fight one. */
+.hub2-card-art::after {
+  content: '';
+  position: absolute;
+  inset: 40% 0 0 0;
+  background: linear-gradient(to top, rgb(6 16 30 / 0.82) 0%, rgb(6 16 30 / 0) 100%);
+}
+
+/* Whatever sits in public/assets/cards/<id>.svg. If the file is not there the
+   <img> never renders and the generated gradient behind it stands in, so an
+   empty folder looks deliberate instead of like eight broken images. */
+.hub2-card-art img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.hub2-card-copy {
+  position: absolute;
+  inset: auto 0 0 0;
+  padding: 14px 14px 13px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 5px;
+}
+
+.hub2-card-copy h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  color: var(--brand-white);
+}
+
+.hub2-card-copy p {
+  margin: 0;
+  font-size: 10.5px;
+  line-height: 1.35;
+  color: rgb(255 255 255 / 0.78);
+}
+
+/* The CTA. Each card names its own action rather than eight identical
+   "Learn more"s — the button is the strongest piece of type on the card and
+   it should spend that saying what happens. Not a real button: the whole
+   card is the link, so this is a visual affordance inside it. */
+.hub2-card-cta {
+  margin-top: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 11px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.14);
+  border: 1px solid rgb(255 255 255 / 0.28);
+  backdrop-filter: blur(6px);
+  font-family: var(--mono);
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--brand-white);
+  transition: background 0.2s ease, gap 0.2s ease;
+}
+
+.hub2-card-cta svg { flex: none; }
+
+.hub2-card:hover .hub2-card-cta {
+  background: var(--mh-accent);
+  border-color: var(--mh-accent);
+  color: #06121a;
+  gap: 10px;
+}
+
+.hub2-card-soon .hub2-card-cta {
+  background: rgb(255 255 255 / 0.08);
+  border-color: rgb(255 255 255 / 0.16);
+  color: rgb(255 255 255 / 0.6);
+}
+
+/* ---- Card effects: spotlight + border glow --------------------------------
+   Hand-rolled versions of reactbits' Spotlight Card / Border Glow, sized
+   down for a 150x190 card and recolored to the brand accent — not the
+   library components themselves, no dependency added. Both read --mx/--my/
+   --glow-angle/--glow-p, which Homepage.jsx's updatePointerVars writes on
+   every pointermove over the card (same write-a-custom-property-on-ref
+   pattern already used by the hero's parallax and the map panel's tilt). */
+
+/* A soft circular highlight that follows the cursor. screen-blended so it
+   only ever adds light — it can sit over the copy without hurting
+   legibility, and disappears at rest instead of hovering as a fixed hotspot. */
+.hub2-card-spotlight {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  opacity: 0;
+  mix-blend-mode: screen;
+  transition: opacity 0.25s ease;
+  background: radial-gradient(140px circle at var(--mx) var(--my), rgb(255 255 255 / 0.24), transparent 72%);
+}
+
+.hub2-card:hover .hub2-card-spotlight,
+.hub2-card[data-dragging='1'] .hub2-card-spotlight {
+  opacity: 1;
+}
+
+/* A conic gradient masked down to a 1.5px ring (the classic
+   padding-box/border-box mask-composite trick — there is no real border
+   here, just a gradient shaped like one) so it only ever glows the card's
+   own edge, brightest nearest the cursor and rotating to follow it. */
+.hub2-card-glow {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  border-radius: inherit;
+  pointer-events: none;
+  padding: 1.5px;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  background: conic-gradient(
+    from calc(var(--glow-angle) - 70deg) at var(--mx) var(--my),
+    transparent,
+    var(--mh-accent) calc(var(--glow-p) * 45%),
+    transparent 60%
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
+.hub2-card:hover .hub2-card-glow,
+.hub2-card[data-dragging='1'] .hub2-card-glow {
+  opacity: calc(0.4 + 0.5 * var(--glow-p));
+}
+
+/* Events lead, per the lock. A hairline accent dot marks them so the two
+   kinds are distinguishable at a glance in a moving bar, without a second
+   colour of type. */
+.hub2-ticker-item[data-kind='event']::before {
+  content: '';
+  display: inline-block;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--brand-accent);
+  margin-right: 8px;
+  vertical-align: 2px;
+}
+
+/* ---- Right column: the map panel -----------------------------------------
+   The panel is its own component (src/components/MapPanel/), styled by
+   MapPanel.css — independent of this page by design, it knows nothing about
+   the hero, the theme, or which map is inside it. .hub2-right is just the
+   grid cell that holds it. (A decorative texture layer briefly lived here
+   on 2026-09-04 — a faint crop of the hero frame sitting behind the glass —
+   removed the same day, Kelly's call. The glass still has the hero's own
+   bleed to refract, which is where the depth actually comes from.) */
+.hub2-right {
+  position: relative;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.hub2-right > .mh-map {
+  flex: 1;
+  min-height: 0;
+}
+
+/* ---- Bottom nav bar ------------------------------------------------------ */
+.hub2-navbar {
+  flex: none;
+  margin: 0 auto 20px;
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  /* 2026-09-04, Kelly's call: overall height down ~15% (56px -> 48px) and
+     the pill retired for a 12px radius. Height is padding + the theme
+     toggle's button, so both had to come down together. */
+  padding: 9px 22px;
+  border-radius: 12px;
+  background: var(--mh-panel-solid);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 18px 40px -20px rgba(0, 0, 0, 0.6);
+}
+
+.hub2-navitem {
+  font-family: var(--sans);
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.78);
+  text-decoration: none;
+  position: relative;
+}
+
+.hub2-navitem:not(:last-of-type)::after {
+  content: '';
+  position: absolute;
+  right: -11px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1px;
+  height: 14px;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.hub2-navitem:hover {
+  color: var(--mh-accent);
+}
+
+.hub2-navitem-current {
+  color: var(--mh-accent);
+  font-weight: 600;
+}
+
+.hub2-navitem-soon {
+  color: rgba(255, 255, 255, 0.35);
+  cursor: default;
+}
+
+.hub2-navbar-pipe {
+  width: 1px;
+  height: 18px;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.hub2-theme-toggle {
+  display: flex;
+  gap: 4px;
+}
+
+.hub2-theme-toggle button {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid transparent;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.hub2-theme-toggle button.is-active {
+  background: rgba(76, 193, 190, 0.18);
+  color: var(--mh-accent);
+}
+
+/* ---- Small screens: fall back to a scrolling stack ----------------------
+   Locked design specifies a fully separate phone page (design-lock
+   "Responsive" section) — this is just a safe placeholder so nothing
+   breaks below desktop/tablet widths until that pass happens. */
+@media (max-width: 900px) {
+  .hub2-shell {
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
+  }
+
+  .hub2-main {
+    grid-template-columns: 1fr;
+    padding: 28px 20px 16px;
+  }
+
+  /* Mobile placeholder only — the locked design makes the phone a separate
+     scrolling page where the map becomes a tappable card. Desktop is the
+     build target; this just stops it collapsing while we get there. */
+  .hub2-right > .mh-map {
+    height: 260px;
+  }
+
+  .hub2-navbar {
+    flex-wrap: wrap;
+    justify-content: center;
+    row-gap: 10px;
+  }
+}
+
+
+/* ---- Dynamic daylight scene -------------------------------------------
+   The real 17-frame Pennsylvania sun transition (src/components/Homepage/hero/).
+   The old .hub2-bg gradient rules above are dead but deliberately left in
+   place, so reverting is a one-line change back in Homepage.jsx.
+
+   DESIGN-LOCK O6, RESOLVED 2026-09-02 (Kelly's call): the light theme keeps
+   its locked dark-navy ink. The scene carries a left-anchored white veil that
+   rises as --day-t falls, so the type has something to sit on without the UI
+   turning into a white box — the sky is still what is bright.
+
+   The veil was originally 0.52, measured: at 0 the darkest 5% of the
+   photograph under the hero stack gives #0E1A2B only 1.30:1; at 0.52 the
+   worst case is 5.94:1 and the picture keeps 78% of its own contrast. Kelly
+   dialed it to 0.45 on 2026-09-03 (see --mh-veil-max in hero.css) for a
+   lighter touch. Recomputed against the same reference colours, worst case
+   at 0.45 is ~4.9:1 solid — still above the 4.5:1 AA floor, but ink-3 below
+   (0.86 alpha, ~4.2:1) is now right on the edge of it, whereas it cleared
+   comfortably at 0.52. Worth a spot check if the lighter veil ships; nudging
+   ink-3 up a few points of alpha would restore the margin without giving up
+   the lighter veil.
+
+   The knock-on is the two faded inks below. Over a photograph, opacity-based
+   hierarchy is the first thing to fail — ink-2 at its old 0.68 measured
+   2.73:1. Both are pushed to near-solid and hierarchy comes from size and
+   weight instead, which is the right move over photography anyway. If you want
+   real greys back, raise --mh-veil-max in hero.css toward 0.52-0.62 and these
+   two can relax. */
+
+.mh-scene {
+  z-index: -1;
+}
+
+html[data-theme='light'] .hub2-shell {
+  --mh-ink: var(--brand-black);
+  --mh-ink-2: rgb(6 15 29 / 0.92);          /* was .68 -> 2.73:1. now 4.94:1 */
+  --mh-ink-3: rgb(6 15 29 / 0.86);          /* was .42. now 4.32:1 */
+  --mh-line: rgb(6 15 29 / 0.18);
+  --mh-panel: rgba(255, 255, 255, 0.55);
+}
+
+/* The hero copy and the glass panels ride the scene's published variables.
+   These are reachable as of the O8 fix — they sit on .hub2-shell (which now
+   carries .mh-daylight) rather than on .mh-scene, so they actually inherit.
+   Type retints on the 500ms --text-t clock while the photograph is still
+   moving on the 1400ms one: the type settles first and the sky catches up. */
+.hub2-title,
+.hub2-prompt-line {
+  text-shadow: var(--hero-ink-shadow, 0 2px 18px rgba(2, 8, 18, 0.5));
+  transition: text-shadow 500ms cubic-bezier(0.45, 0, 0.55, 1);
+}
+
+.hub2-card {
+  box-shadow: var(--hero-panel-shadow, 0 24px 70px rgba(2, 8, 18, 0.4));
+}

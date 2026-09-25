@@ -1,0 +1,80 @@
+/* ==========================================================================
+   tokens.css — the brand, defined once
+   --------------------------------------------------------------------------
+   Imported first by main.jsx, so every component inherits these from :root.
+
+   WHY THIS FILE EXISTS
+   The accent used to be written out nine times across five files under five
+   different names — --mh-accent, --mh-accent-text, --mh-accent-fill, --teal,
+   --bd-teal, --mh-map-accent, and twice as a bare literal in App.css. The
+   three font stacks were duplicated across five files the same way. Change
+   the accent and you would find seven of the nine.
+
+   HOW IT WORKS — two layers, on purpose
+   This file holds the --brand-* layer: what the company's colours and faces
+   ARE. Each component keeps its own local names for what a value is FOR
+   (--mh-map-chrome, --bd-teal) and points them here:
+
+       .mh-map { --mh-map-accent: var(--brand-accent); }
+
+   Nothing downstream had to be renamed, no specificity changed, and there is
+   still exactly one hex per colour.
+
+   ADDING TO THIS FILE
+   Only put something here once two or more components use it. A value one
+   component owns belongs in that component's CSS — DistrictMap's --ease and
+   choropleth ramp, MapPanel's radius, the hero's clocks. Hoisting those would
+   make this file the place everything accumulates, which is what it exists to
+   prevent.
+   ========================================================================== */
+
+:root {
+  /* ---- The four, as specified ------------------------------------------ */
+  --brand-black: #060f1d;
+  --brand-white: #fffdfa;
+  --brand-accent: #4cc1bc;
+
+  /* Navy is a mix of the two you liked: the company navy #2E4768 and the
+     darker #0A1B2E. Solid surfaces take the GRADIENT — that is where both
+     colours are actually visible — and --brand-navy is their true midpoint,
+     mixed in linear light rather than by averaging hex, for the places a
+     gradient cannot go: borders, rules, and type. */
+  --brand-navy: #213651;
+  --brand-navy-grad: linear-gradient(180deg, #2e4768 0%, #0a1b2e 100%);
+
+  /* ---- Derived, not invented -------------------------------------------
+     Same hue and saturation as --brand-accent, moved in lightness until each
+     one carries its contrast. Every number below is measured against the
+     surface named beside it, so re-deriving after a palette change is
+     mechanical rather than a matter of taste.
+
+     --brand-accent on --brand-white is 2.14:1. That is not a near miss, it is
+     unusable for text, and it is why the two light-theme values exist: they
+     are the same accent corrected for a pale ground, not new colours. */
+  --brand-accent-ink: #28726f;    /* small text on white — 5.55:1 */
+  --brand-accent-fill: #359894;   /* fills and buttons on white — 3.41:1 */
+
+  /* Type on the navy gradient has to hold at BOTH ends, so the light end
+     #2E4768 sets the bar. The base accent is 4.36:1 there — fine for large
+     type, under the 4.5 mark for the 10px uppercase mono the map header sets
+     "ICS/CMTA" in. This is the same teal lifted until it clears across the
+     whole bar. Use it on navy only; on black the base accent is 8.83:1. */
+  --brand-accent-lift: #59c6c1;   /* accent on navy — 4.63:1 */
+
+  /* ---- Measured, for reference -----------------------------------------
+       white  on black    18.91:1     black on white   18.91:1
+       accent on black     8.83:1     black on accent   8.83:1
+     On the navy gradient, measured at its LIGHT end (the worst case):
+       white   9.33:1      accent 4.36:1      accent-lift 4.63:1
+     and at its dark end, 17.11 / 7.99 / 8.50. Navy on black is 2.03:1 —
+     navy is a surface that sits ON the black ground, never type over it. */
+
+  /* ---- Type -------------------------------------------------------------
+     Loaded in index.html from Google Fonts. Add a weight here and add it to
+     that URL too, or the browser synthesises it and the letterforms smear.
+     Requested: Archivo 400/500/600/700, IBM Plex Mono 400/500/600,
+     Libre Caslon Display regular. */
+  --brand-serif: 'Libre Caslon Display', 'Iowan Old Style', Georgia, serif;
+  --brand-sans: 'Archivo', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --brand-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, 'Cascadia Mono', monospace;
+}
